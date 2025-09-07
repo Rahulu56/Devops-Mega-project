@@ -11,5 +11,11 @@ pipeline{
                 cleanWs()
             }
         } 
+        stage("Checkout from SCM"){
+            steps {
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/Rahulu56/Devops-Mega-project.git'
+            }
+
+        }
 }
 }
