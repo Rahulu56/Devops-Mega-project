@@ -6,7 +6,7 @@ pipeline {
         maven 'Maven3'      // Make sure Maven3 is configured too
     }
       environment {
-        APP_NAME = "Devops-Mega-project"
+        APP_NAME = "devops-mega-project"
         RELEASE = "1.0.0"
         DOCKER_USER = "rahul699"
         DOCKER_PASS = 'dockerhub'
@@ -44,7 +44,7 @@ pipeline {
         stage("Sonarqube Analysis") {
             steps {
                 script {
-                    withSonarQubeEnv('jenkins-sonarqube-token'){
+                    withSonarQubeEnv(credentialsId: 'jenkins-sonarqube-token'){
                         sh "mvn sonar:sonar"
                     }
                 }
