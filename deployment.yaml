@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devopsmegaproject
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devopsmegaproject
+  template:
+    metadata:
+      labels:
+        app: devopsmegaproject
+    spec:
+      containers:
+        - name: devopsmegaproject
+          image: mydevopsuser46/devops-mega-project:1.0.0-14
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8080

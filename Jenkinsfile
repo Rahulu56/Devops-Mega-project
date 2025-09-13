@@ -1,46 +1,51 @@
-pipeline {
+pipeline{
     agent any
-
+    
     tools {
-        jdk 'Java17'        // Make sure Java17 is configured in Jenkins Global Tool Configuration
-        maven 'Maven3'      // Make sure Maven3 is configured too
+        jdk 'Java17'
+        maven 'Maven3'
     }
-      environment {
+    
+    environment {
         APP_NAME = "devops-mega-project"
         RELEASE = "1.0.0"
         DOCKER_USER = "rahul699"
         DOCKER_PASS = 'dockerhub'
         IMAGE_NAME = "${DOCKER_USER}" + "/" + "${APP_NAME}"
         IMAGE_TAG = "${RELEASE}-${BUILD_NUMBER}"
-        // JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
+        JENKINS_API_TOKEN = credentials("JENKINS_API_TOKEN")
 
     }
-    stages {
-        stage("Cleanup Workspace") {
+
+    stages{
+        stage("Cleanup Workspace"){
             steps {
                 cleanWs()
             }
+
+        }
+        stage("Checkout from SCM"){
+            steps {
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/Rahulu56/Devops-Mega-project.git'
+            }
+
         }
 
-        stage("Checkout from SCM") {
+
+        stage("Build the application"){
             steps {
-                git branch: 'main',
-                    credentialsId: 'github',
-                    url: 'https://github.com/Rahulu56/Devops-Mega-project.git'
+               sh "mvn clean package"
             }
+
         }
 
-        stage("Build the Application") {
+        stage("Test the application"){
             steps {
-                sh "mvn clean package"
+               sh "mvn test"
             }
+
         }
 
-        stage("Test the Application") {
-            steps {
-                sh "mvn test"
-            }
-        }
         stage("Sonarqube Analysis") {
             steps {
                 script {
@@ -59,6 +64,7 @@ pipeline {
             }
 
         }
+
         stage("Build & Push Docker Image") {
             steps {
                 script {
@@ -74,7 +80,8 @@ pipeline {
             }
 
         }
-         stage("Trivy Scan") {
+
+        stage("Trivy Scan") {
             steps {
                 script {
 		   sh ('docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image rahul699/devops-mega-project:latest  --no-progress --scanners vuln  --exit-code 0 --severity HIGH,CRITICAL --format table')
@@ -92,5 +99,35 @@ pipeline {
             }
         }
         
+        stage("Trigger CD Pipeline") {
+            steps {
+                script {
+                    sh "curl -v -k --user admin:${JENKINS_API_TOKEN} -X POST -H 'cache-control: no-cache' -H 'content-type: application/x-www-form-urlencoded' --data 'IMAGE_TAG=${IMAGE_TAG}' 'http://35.193.80.199:8080:8080/job/Gitops-devops-mega-project/buildWithParameters?token=gitops-token'"
+                }
+            }
+
+        }
+
     }
+
+    post {
+          success {
+              emailext (
+                  to: 'malirahul112011@gmail.com',
+                  subject: "SUCCESS: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                  body: """<p>Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' succeeded.</p><p>Check console output at <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                  mimeType: 'text/html'
+              )
+          }
+          failure {
+              emailext (
+                  to: 'malirahul112001@gmail.com',
+                  subject: "FAILURE: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                  body: """<p>Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' failed.</p><p>Check console output at <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>""",
+                  mimeType: 'text/html'
+               )
+        }
+
+       }
+
 }
